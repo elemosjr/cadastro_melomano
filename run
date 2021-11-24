@@ -1,0 +1,22 @@
+#!/bin/sh
+
+if [ $1 == "build" ]
+    then
+        docker stop -t 0 cadastro_melomano
+        docker container rm cadastro_melomano
+        docker rmi cadastro_melomano
+        docker build -t cadastro_melomano -f Dockerfile .
+fi
+
+if [ $1 == "run" ]
+    then
+        docker stop -t 0 cadastro_melomano
+        docker container rm cadastro_melomano
+        docker container run -v "$(pwd):/var/www" -p 8080:5000 -it --name cadastro_melomano cadastro_melomano
+fi
+
+if [ $1 == "stop" ]
+    then
+        docker stop -t 0 cadastro_melomano
+        docker container rm cadastro_melomano
+fi
