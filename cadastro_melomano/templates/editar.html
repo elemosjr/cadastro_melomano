@@ -27,9 +27,15 @@
       <label for="desc">Descrição</label>
       <textarea class="form-control" name="desc" id="desc" cols="40" rows="{{ discogs_info.tracks_len }}">{{ discogs_info.tracks }}</textarea>
     </div>
+    {% elif not vinil %}
+    <div class="form-group">
+      <label for="desc">Informações</label>
+      <textarea class="form-control" name="desc" id="desc" cols="40" rows="{{ discogs_info.tracks_len }}">{{ discogs_info.info }}</textarea>
+    </div>
+    {% endif %}
     <div class="form-group">
       <label for="estilo">Estilo</label>
-      <select class="form-select form-control" aria-label="Default select example">
+      <select class="form-select form-control" aria-label="Default select example" name="estilo" id="estilo">
         <option selected>Escolha o estilo</option>
         <option>Blues - Jazz - Soul - Funk</option>
         <option>Classic Rock</option>
@@ -40,14 +46,13 @@
         <option>Orquestral - Erudito - Classico</option>
         <option>Pop</option>
         <option>Pop Rock</option>
-        <option>Progressive - Electronic - Psych - Folk</option>k
-        <option>Punk - Hardcor</option>e
-        <option>Regga</option>e
-        <option>Rock Naciona</option>l
-        <option>Trilhas Sonora</option>s
+        <option>Progressive - Electronic - Psych - Folk</option>
+        <option>Punk - Hardcor</option>
+        <option>Reggae</option>
+        <option>Rock Nacional</option>
+        <option>Trilhas Sonoras</option>
       </select>
     </div>
-    {% endif %}
     <button type="submit" class="btn btn-primary btn-salvar">Salvar</button>
     <a class="btn btn-danger" href="{{ url_for('index') }}">Cancelar</a>
   </fieldset>

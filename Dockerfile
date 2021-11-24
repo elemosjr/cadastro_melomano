@@ -2,7 +2,10 @@ FROM python:3.9
 
 WORKDIR /var/www
 
-RUN pip install flask==2.0.2 bs4==0.0.1 requests
+COPY cadastro_melomano /var/www/cadastro_melomano/
+COPY * /var/www/
+
+RUN pip install -r requirements.txt
 
 EXPOSE 5000
 

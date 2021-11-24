@@ -1,6 +1,11 @@
-from flask import render_template, request, redirect, session, flash, url_for
+from flask import render_template, request, redirect, session, flash, url_for, send_file
 from cadastro_melomano.app import app
-from cadastro_melomano.utils import discogs, InfoVinil
+from cadastro_melomano.utils import discogs, check_tipo_info, InfoVinil
+import re
+import os
+import json
+import datetime
+import pandas as pd
 
 @app.route("/", methods = ["POST", "GET"])
 def index():
@@ -8,17 +13,97 @@ def index():
 
 @app.route("/editar", methods = ["POST", "GET"])
 def editar():
-    if "link" not in request.form:
-        discogs_info = InfoVinil(*[""] * 7)
-    else:
+    padrao_link = "(http://)?(https://)?(www.)?discogs.com.*"
+    if "link" in request.form:
         link = request.form["link"]
-        discogs_info = discogs(link)
+        if re.fullmatch(padrao_link, link):
+            discogs_info = discogs(link)
+        else:
+            flash("Link inválido.", "danger")
+            return redirect(url_for("index"))
+    else:
+        discogs_info = check_tipo_info(session, request)
     return render_template(
         "editar.html",
         discogs_info = discogs_info,
         vinil = isinstance(discogs_info, InfoVinil)
     )
 
-@app.route("/visualizar")
+@app.route("/visualizar", methods = ["GET", "POST"])
 def visualizar():
-    return render_template("index.html")
+    if "dados" not in session:
+        if "gravadora" in request.form:
+            session["dados"] = [
+                [
+                    "cód", "Artista", "Titulo", "Vinil", "Capa", "País",
+                    "Gravadora", "Ano", "Descrição", "Estilo", "Preço"
+                ]
+            ]
+        else:
+            session["dados"] = [
+                [
+                    "cód", "Artista", "Titulo", "Vinil", "Capa",
+                    "País", "Descrição", "Estilo", "Preço"
+                ]
+            ]
+
+    if "artista" in request.form:
+        if "gravadora" in request.form:
+            dados_novos = [
+                "",
+                request.form["artista"],
+                request.form["titulo"],
+                "",
+                "",
+                request.form["pais"],
+                request.form["gravadora"],
+                request.form["ano"],
+                re.sub("\n", " / ", request.form["desc"]),
+                request.form["estilo"],
+                ""
+            ]
+            session["dados"] += [dados_novos]
+        else:
+            dados_novos = [
+                "",
+                request.form["artista"],
+                request.form["titulo"],
+                "",
+                "",
+                request.form["pais"],
+                re.sub("\n", " / ", request.form["desc"]),
+                request.form["estilo"],
+                ""
+            ]
+            session["dados"] += [dados_novos]
+    if len(session["dados"][0]) == 11:
+        tamanhos = [30, 140, 140, 40, 40, 60, 140, 40, 480, 160, 40]
+    else:
+        tamanhos = [30, 190, 200, 40, 40, 40, 480, 160, 40]
+    return render_template(
+        "visualizar.html",
+        data = session["dados"],
+        tamanhos = tamanhos
+    )
+
+@app.route("/limpar")
+def limpar():
+    if not session.get("dados") is None:
+        session.pop("dados")
+    return redirect(url_for("index"))
+
+@app.route("/salvar")
+def salvar():
+    dados = session["dados"]
+    dia = datetime.time().strftime('%d')
+    cadastros = pd.DataFrame(dados[1:], columns = dados[0])
+    path = os.path.join(app.root_path, "temp.xlsx")
+    cadastros.to_excel(path, index = None, header = True)
+
+    return send_file(path, as_attachment = True, download_name = f"{dia}.xlsx")
+
+@app.route("/salvar_estado", methods = ["POST"])
+def salvar_estado():
+    dados = request.get_json()
+    session["dados"] = json.load(dados)
+    return redirect(url_for("atualizar"))

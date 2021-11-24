@@ -1,4 +1,3 @@
-from flask import flash, redirect, url_for, render_template
 from bs4 import BeautifulSoup
 import re
 import requests
@@ -15,11 +14,12 @@ class InfoVinil:
         self.tracks_len = tracks_len
 
 class InfoCD:
-    def __init__(self, artista, titulo, pais, info):
+    def __init__(self, artista, titulo, pais, info, tracks_len):
         self.artista = artista
         self.titulo = titulo
         self.pais = pais
         self.info = info
+        self.tracks_len = tracks_len
 
 
 def get_master(soup):
@@ -136,3 +136,9 @@ def discogs(link):
     else:
         return InfoVinil(*[""] * 7)
 
+def check_tipo_info(session, request):
+    if "link" not in request.form:
+        if not session.get("dados"):
+            if "Gravadora" not in session["dados"][0]:
+                return InfoCD(*[""] * 5)
+    return InfoVinil(*[""] * 7)
