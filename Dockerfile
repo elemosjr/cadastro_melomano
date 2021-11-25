@@ -2,8 +2,7 @@ FROM python:3.9
 
 WORKDIR /var/www
 
-COPY cadastro_melomano /var/www/cadastro_melomano/
-COPY * /var/www/
+COPY . .
 
 RUN pip install -r requirements.txt
 
