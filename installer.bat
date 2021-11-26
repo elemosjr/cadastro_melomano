@@ -1,0 +1,1 @@
+pyinstaller -F -n "Cadastro Melomano" --distpath win --workpath win --specpath win --icon=../cadastro_melomano/static/favicon.ico --add-data ../cadastro_melomano;cadastro_melomano app.py

@@ -54,7 +54,7 @@ def get_master(soup):
     year_head = "Year:"
     if year_head in info_head:
         year_idx = info_head.index(year_head)
-        year = re.search("\\d{4}", info_content[year_idx]).group()
+        year = re.search("\\d{4}", info_content[year_idx]).group() #### tenho que arrumar isso
     
     return InfoVinil(artista, titulo, "", "", year, tracks, len(track_list))
 
@@ -88,7 +88,7 @@ def get_release(soup):
     year_head = "Released:"
     if year_head in info_headers:
         year_idx = info_headers.index(year_head)
-        year = re.search("\\d{4}", info_rows[year_idx].text).group()
+        year = re.search("\\d{4}", info_rows[year_idx].text).group() #### tenho arrumar isso aqui
 
     track_list = []
     track_rows = soup.find("section", id = tracklist_id).find("table").find_all("tr")
