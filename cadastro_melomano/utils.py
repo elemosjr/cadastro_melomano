@@ -1,17 +1,30 @@
-from bs4 import BeautifulSoup
-import re
+from __future__ import annotations
 import requests
+import re
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
+
+
+DISCOGS_API_TOKEN = os.environ.get("DISCOGS_API_TOKEN")
+RELEASE_URL = "https://api.discogs.com/releases/{}?token={}"
+MASTER_URL = "https://api.discogs.com/masters/{}?token={}"
 
 class InfoVinil:
-    def __init__(self, artista, titulo, pais, label, year, tracks, tracks_len):
+    def __init__(self, artista, titulo, pais, selo, ano, faixas, tracks_len):
         self.artista = artista
         self.titulo = titulo
         self.pais = pais
-        self.label = label
-        self.year = year
-        self.tracks = tracks
+        self.selo = selo
+        self.ano = ano
+        self.faixas = faixas
         self.tracks_len = tracks_len
+
+    def __str__(self):
+        return f"""Artista: {self.artista}\nTítulo: {self.titulo}\n
+                   País: {self.pais}\nSelo: {self.selo}\n
+                   Ano: {self.ano}\nFaixas: {self.faixas}"""
 
 class InfoCD:
     def __init__(self, artista, titulo, pais, info, tracks_len):
@@ -22,123 +35,142 @@ class InfoCD:
         self.tracks_len = tracks_len
 
 
-def get_master(soup):
-    tracklist_id = "tracklist"
-    track_name_class = "tracklist_track_title"
-    main_div = soup.find_all("div", id = "page_content")[0]
-
-    artista, titulo = [
-            re.sub("\n+.*$", "", x.strip())
-            for x in main_div.find("h1").text.split("–")
-        ]
-
-    track_list = []
-    track_rows = soup.find("div", id = tracklist_id).find("table").find_all("tr")
-
-    tracks = ""
-
-    for row in track_rows:
-        musica = row.find("td", class_ = re.compile(track_name_class)).text
-        artist = row.find("td", class_ = re.compile("artist"))
-        if artist:
-            musica += artist.text
-        track_list.append(musica.strip())
-
-    tracks = "\n".join(track_list)
-
-    info_content = list(map(lambda x: x.text, soup.find("div", class_ = "profile").find_all("div", class_ = "content")))
-    info_head = list(map(lambda x: x.text, soup.find("div", class_ = "profile").find_all("div", class_ = "head")))
-
-    year = ""
-
-    year_head = "Year:"
-    if year_head in info_head:
-        year_idx = info_head.index(year_head)
-        year = re.search("\\d{4}", info_content[year_idx]).group() #### tenho que arrumar isso
-    
-    return InfoVinil(artista, titulo, "", "", year, tracks, len(track_list))
+    def __str__(self):
+        return f"""Artista: {self.artista}\nTítulo: {self.titulo}\n
+                   País: {self.pais}\Informações: {self.info}"""
 
 
-def get_release(soup):
-    tracklist_id = "release-tracklist"
-    track_name_class = "^trackTitle*"
-    main_div = soup.find_all("div", class_ = re.compile("main_*"))[0]
-    info_rows = main_div.find_all("tr")
-    info_headers = list(map(lambda x: x.text, main_div.find_all("th")))
+def formata_artista(artistas):
+    aux = []
+    for artista in artistas:
+        nome = re.sub("( \([0-9]+\)$)(\*)", "", artista["name"])
+        aux.append(nome)
+    return ", ".join(aux)
 
-    artista, titulo = [
-            re.sub("\n+.*$", "", x.strip())
-            for x in main_div.find("h1").text.split("–")
-        ]
+def formata_selo(selos):
+    aux = []
+    for selo in selos:
+        aux.append(f"{selo['name']} - {selo['catno']}")
+    return ", ".join(aux)
 
-    country = ""
-    country_head = "Country:"
-    if country_head in info_headers:
-        country_idx = info_headers.index(country_head)
-        country = re.sub(f"^{country_head}", "", info_rows[country_idx].text)
+def lista_faixas(faixas):
+    aux = []
+    for faixa in faixas:
+        try:
+            string = f"{faixa['title']} ({formata_artista(faixa['artists'])})"
+            string = re.sub("^[ \t]+", "", string)
+            aux.append()
+        except KeyError:
+            aux.append(faixa["title"])
+    return aux
 
-    label = ""
-    label_head = "Label:"
-    if label_head in info_headers:
-        label_idx = info_headers.index(label_head)
-        label = re.sub(f"^{label_head}", "", info_rows[label_idx].text)
+def formata_formatos(formatos):
+    aux = []
+    for formato in formatos:
+        aux.append(formato["name"])
+    return ", ".join(aux)
 
-    year = ""
+def busca(body, item):
+    try:
+        return body[item]
+    except:
+        return ""
 
-    year_head = "Released:"
-    if year_head in info_headers:
-        year_idx = info_headers.index(year_head)
-        year = re.search("\\d{4}", info_rows[year_idx].text).group() #### tenho arrumar isso aqui
+def get_master(master_id):
+    master_r = requests.get(MASTER_URL.format(master_id, DISCOGS_API_TOKEN))
 
-    track_list = []
-    track_rows = soup.find("section", id = tracklist_id).find("table").find_all("tr")
+    if master_r.status_code == 200:
+        body = master_r.json()
 
-    tracks = ""
+        artista = formata_artista(busca(body, "artists"))
+        titulo = busca(body, "title")
+        ano = busca(body, "year")
+        if ano:
+            titulo = f"{titulo} ({ano})"
+        tracklist = lista_faixas(busca(body, "tracklist"))
+        tracks_len = len(tracklist)
+        faixas = "\n".join(tracklist)
 
-    for row in track_rows:
-        musica = row.find("td", class_ = re.compile(track_name_class)).text
-        artist = row.find("td", class_ = re.compile("artist"))
-        if artist:
-            musica += artist.text
-        track_list.append(musica)
-
-    tracks = "\n".join(track_list)
-
-    tracks_len = len(track_list)
-
-    formato = ""
-
-    format_head = "Format:"
-    if format_head in info_headers:
-        format_idx = info_headers.index(format_head)
-        formato = re.sub(f"^{format_head}", "", info_rows[format_idx].text)
-
-    if "CD" in formato:
-        return None
+        if "CD" in formata_formatos(busca(body, "formats")):
+            info = f"Músicas: {faixas}"
+            if ano:
+                info += f" ({ano})"
+            return InfoCD(artista, titulo, "", info, tracks_len)
+        else:
+            return InfoVinil(artista, titulo, "", "", ano, faixas, tracks_len)
     else:
-        return InfoVinil(artista, titulo, country, label, year, tracks, tracks_len)
+        return False
 
+def get_release(release_id):
+    release_r = requests.get(RELEASE_URL.format(release_id, DISCOGS_API_TOKEN))
+
+    if release_r.status_code == 200:
+        body = release_r.json()
+
+        try:
+            master_url = body["master_url"]
+            master_r = requests.get(f"{master_url}?token={DISCOGS_API_TOKEN}")
+
+            if master_r.status_code == 200:
+                ano_master = busca(master_r.json(), "year")
+        except KeyError:
+            pass
+
+        artista = formata_artista(busca(body, "artists"))
+        titulo = busca(body, "title")
+        ano = busca(body, "year")
+
+        try:
+            titulo = f"{titulo} ({ano_master})"
+        except:
+            titulo = f"{titulo} ({ano})"
+
+        pais = busca(body, "country")
+        selo = formata_selo(busca(body, "labels"))
+        tracklist = lista_faixas(busca(body, "tracklist"))
+        tracks_len = len(tracklist)
+        faixas = "\n".join(tracklist)
+
+        if "CD" in formata_formatos(busca(body, "formats")):
+            info = f"Músicas: {faixas} - {selo}"
+            if ano:
+                info += f" ({ano})"
+            return InfoCD(artista, titulo, pais, info, tracks_len)
+        else:
+            return InfoVinil(artista, titulo, pais, selo, ano, faixas, tracks_len)
+    else:
+        # flash(...)
+        # return check_tipo_info(session, request) FAZER ISSO NO views.py
+        return False # (?)
 
 def discogs(link):
-    master_re = "(http://)?(https://)?(www.)?discogs.com/master/.*"
-    release_re = "(https://)?(http://)?(www.)?discogs.com/release/.*"
+    master_re = "(http://)?(https://)?(www.)?discogs.com/master/[0-9]+.*"
+    release_re = "(https://)?(http://)?(www.)?discogs.com/release/[0-9]+.*"
 
-    master = re.fullmatch(master_re, link)
-    release = re.fullmatch(release_re, link)
-
-    pagina = requests.get(link)
-    soup = BeautifulSoup(pagina.content, "html.parser")
-
-    if master:
-        return get_master(soup)
-    elif release:
-        return get_release(soup)
+    if re.fullmatch(master_re, link):
+        master_id = re.search("(\\d+)", link).group(1)
+        return get_master(master_id)
+    elif re.fullmatch(release_re, link):
+        release_id = re.search("(\\d+)", link).group(1)
+        return get_release(release_id)
     else:
-        return InfoVinil(*[""] * 7)
+        return False
 
-def check_tipo_info(session, request):
-    if "link" not in request.form:
-        if not session.get("dados"):
-            if "Gravadora" not in session["dados"][0]:
-                return InfoCD(*[""] * 5)
+def check_mesmo_tipo(session, request, obj):
+    if session.get("dados"):
+        if "Gravadora" in session["dados"][0]:
+            if obj.selo:
+                return True
+        else:
+            if not obj.selo:
+                return True
+        return False
+    return True
+
+def retorna_info_dados(session, request):
+    """Retorna Informações objeto de informações vazio de acordo com os dados da sessão
+    """
+    if session.get("dados"):
+        if "Gravadora" not in session["dados"][0]:
+            return InfoCD(*[""] * 5)
     return InfoVinil(*[""] * 7)

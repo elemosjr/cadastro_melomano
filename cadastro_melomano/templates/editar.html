@@ -17,15 +17,15 @@
     {% if vinil %}
     <div class="form-group">
       <label for="gravadora">Gravadora</label>
-      <input type="text" id="gravadora" name="gravadora" class="form-control" value="{{ discogs_info.label }}">
+      <input type="text" id="gravadora" name="gravadora" class="form-control" value="{{ discogs_info.selo }}">
     </div>
     <div class="form-group">
       <label for="ano">Ano</label>
-      <input type="text" id="ano" name="ano" class="form-control" value="{{ discogs_info.year }}">
+      <input type="text" id="ano" name="ano" class="form-control" value="{{ discogs_info.ano }}">
     </div>
     <div class="form-group">
       <label for="desc">Descrição</label>
-      <textarea class="form-control" name="desc" id="desc" cols="40" rows="{{ discogs_info.tracks_len }}">{{ discogs_info.tracks }}</textarea>
+      <textarea class="form-control" name="desc" id="desc" cols="40" rows="{{ discogs_info.tracks_len }}">{{ discogs_info.faixas }}</textarea>
     </div>
     {% elif not vinil %}
     <div class="form-group">

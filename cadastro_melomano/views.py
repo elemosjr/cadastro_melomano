@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, session, flash, url_for, send_file
 from cadastro_melomano.app import app
-from cadastro_melomano.utils import discogs, check_tipo_info, InfoVinil
+from cadastro_melomano.utils import discogs, retorna_info_dados, InfoVinil, check_mesmo_tipo
 import re
 import os
 import json
@@ -18,11 +18,15 @@ def editar():
         link = request.form["link"]
         if re.fullmatch(padrao_link, link):
             discogs_info = discogs(link)
+            if not check_mesmo_tipo(session, request, discogs_info):
+                nome_classe = re.sub("Info", "", type(discogs_info).__name__)
+                flash(f"Cadastro do tipo {nome_classe} difere dos dados da sessão.", "danger")
+                return redirect(url_for("index"))
         else:
             flash("Link inválido.", "danger")
             return redirect(url_for("index"))
     else:
-        discogs_info = check_tipo_info(session, request)
+        discogs_info = retorna_info_dados(session, request)
     return render_template(
         "editar.html",
         discogs_info = discogs_info,
