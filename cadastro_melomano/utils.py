@@ -43,7 +43,7 @@ class InfoCD:
 def formata_artista(artistas):
     aux = []
     for artista in artistas:
-        nome = re.sub("( \([0-9]+\)$)(\*)", "", artista["name"])
+        nome = re.sub("( \([0-9]+\)$)?(\*)?", "", artista["name"])
         aux.append(nome)
     return ", ".join(aux)
 
@@ -58,10 +58,15 @@ def lista_faixas(faixas):
     for faixa in faixas:
         try:
             string = f"{faixa['title']} ({formata_artista(faixa['artists'])})"
-            string = re.sub("^[ \t]+", "", string)
-            aux.append()
         except KeyError:
-            aux.append(faixa["title"])
+            string = faixa["title"]
+        try:
+            sub_tracks = " / ".join(lista_faixas(faixa["sub_tracks"]))
+            string += f" ({sub_tracks})"
+        except:
+            pass
+        string = re.sub("^[ \t]+", "", string)
+        aux.append(string)
     return aux
 
 def formata_formatos(formatos):
@@ -97,7 +102,7 @@ def get_master(master_id):
                 info += f" ({ano})"
             return InfoCD(artista, titulo, "", info, tracks_len)
         else:
-            return InfoVinil(artista, titulo, "", "", ano, faixas, tracks_len)
+            return InfoVinil(artista, titulo, "", "", ano, f"Músicas: {faixas}", tracks_len)
     else:
         return False
 
@@ -137,11 +142,9 @@ def get_release(release_id):
                 info += f" ({ano})"
             return InfoCD(artista, titulo, pais, info, tracks_len)
         else:
-            return InfoVinil(artista, titulo, pais, selo, ano, faixas, tracks_len)
+            return InfoVinil(artista, titulo, pais, selo, ano, f"Músicas: {faixas}", tracks_len)
     else:
-        # flash(...)
-        # return check_tipo_info(session, request) FAZER ISSO NO views.py
-        return False # (?)
+        return False
 
 def discogs(link):
     master_re = "(http://)?(https://)?(www.)?discogs.com/master/[0-9]+.*"
@@ -156,13 +159,13 @@ def discogs(link):
     else:
         return False
 
-def check_mesmo_tipo(session, request, obj):
+def check_mesmo_tipo(session, obj):
     if session.get("dados"):
         if "Gravadora" in session["dados"][0]:
             if obj.selo:
                 return True
         else:
-            if not obj.selo:
+            if not "selo" in dir(obj):
                 return True
         return False
     return True

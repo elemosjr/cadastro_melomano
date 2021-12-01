@@ -18,7 +18,7 @@ def editar():
         link = request.form["link"]
         if re.fullmatch(padrao_link, link):
             discogs_info = discogs(link)
-            if not check_mesmo_tipo(session, request, discogs_info):
+            if not check_mesmo_tipo(session, discogs_info):
                 nome_classe = re.sub("Info", "", type(discogs_info).__name__)
                 flash(f"Cadastro do tipo {nome_classe} difere dos dados da sessão.", "danger")
                 return redirect(url_for("index"))
@@ -101,13 +101,16 @@ def salvar():
     dados = session["dados"]
     dia = datetime.time().strftime('%d')
     cadastros = pd.DataFrame(dados[1:], columns = dados[0])
+    cadastros["Descrição"] = cadastros["Descrição"].map(
+        lambda x: re.sub("\r/c", "", str(x))
+    )
     path = os.path.join(app.root_path, "temp.xlsx")
     cadastros.to_excel(path, index = None, header = True)
 
     return send_file(path, as_attachment = True, download_name = f"{dia}.xlsx")
 
-@app.route("/salvar_estado", methods = ["POST"])
+@app.route("/salvar_estado", methods = ["GET", "POST"])
 def salvar_estado():
     dados = request.get_json()
-    session["dados"] = json.load(dados)
-    return redirect(url_for("atualizar"))
+    session["dados"] = dados["data"]
+    return "ok"

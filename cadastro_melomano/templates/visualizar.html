@@ -5,7 +5,7 @@
     <hr>
         <div class="container-fluid">
         <a class="btn btn-primary" href="{{ url_for('index') }}">Adicionar outra entrada</a>
-        <button class="btn btn-primary botao_salvar" id="salvar">Salvar estado da planilha</button>
+        <button class="btn btn-primary" id="botao_salvar">Salvar estado da planilha</button>
         <a class="btn btn-primary" href="{{ url_for('salvar') }}">Download (xlsx)</a>
         <a class="btn btn-danger" style="float: right !important" href="{{ url_for('limpar') }}">Limpar</a>
     </div>
@@ -31,38 +31,18 @@ $(function () {
         colWidths: {{ tamanhos }},
         rowHeights: 25
     });
-});
 
-document.getElementById("botao_salvar").addEventListener("click", () => {
-    var data = { data: hot.GetData()};
-    $.ajax({
-        url: "/salvar_estado",
-        type: "POST",
-        data: JSON.stringify(data),
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-        async: true
+    $("#botao_salvar").click(function (event) {
+        $.ajax({
+            url: "/salvar_estado",
+            type: "POST",
+            data: JSON.stringify({data: hot.getData()}),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            async: true
+        });
     });
 });
 
 </script> 
-
-<!--
-Handsontable.Dom.addEvent(save, 'click', function() {
-    // save all cell's data
-    var arr = { data: hot.getData()};
-    $.ajax({
-        url: '/json/save/',
-        type: 'POST',
-        data: JSON.stringify(arr),
-        contentType: 'application/json; charset=utf-8',
-        dataType: 'json',
-        async: true,
-        success: function(msg) {
-            console.log(msg);
-    }
-    });
-});
--->
-
 {% endblock %}
