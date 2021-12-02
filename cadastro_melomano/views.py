@@ -62,7 +62,7 @@ def visualizar():
                 request.form["pais"],
                 request.form["gravadora"],
                 request.form["ano"],
-                re.sub("\n", " / ", request.form["desc"]),
+                re.sub("\r", "", re.sub("\n", " / ", request.form["desc"])),
                 request.form["estilo"],
                 ""
             ]
@@ -75,7 +75,7 @@ def visualizar():
                 "",
                 "",
                 request.form["pais"],
-                re.sub("\n", " / ", request.form["desc"]),
+                re.sub("\r", "", re.sub("\n", " / ", request.form["desc"])),
                 request.form["estilo"],
                 ""
             ]
@@ -101,9 +101,6 @@ def salvar():
     dados = session["dados"]
     dia = datetime.time().strftime('%d')
     cadastros = pd.DataFrame(dados[1:], columns = dados[0])
-    cadastros["Descrição"] = cadastros["Descrição"].map(
-        lambda x: re.sub("\r/c", "", str(x))
-    )
     path = os.path.join(app.root_path, "temp.xlsx")
     cadastros.to_excel(path, index = None, header = True)
 

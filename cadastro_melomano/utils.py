@@ -50,7 +50,8 @@ def formata_artista(artistas):
 def formata_selo(selos):
     aux = []
     for selo in selos:
-        aux.append(f"{selo['name']} - {selo['catno']}")
+        nome = re.sub("( \([0-9]+\)$)?(\*)?", "", selo["name"])
+        aux.append(f"{nome} - {selo['catno']}")
     return ", ".join(aux)
 
 def lista_faixas(faixas):
